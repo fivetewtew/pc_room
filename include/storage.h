@@ -24,6 +24,12 @@ int getLoginTime(const char *id, time_t *out_t);         // 1=성공,0=없음 (�
 // 손님(게스트) 남은 시간 로드/저장
 int loadGuestInfo(const char *id, GuestInfo *outGuest);  // 1=성공,0=없음
 int saveGuestInfo(const GuestInfo *guest);               // 1=성공,0=실패
+int deleteGuestInfo(const char *id);                     // 1=성공,0=없음
+
+// Guest session (login tracking): id,login_time,remain_at_login
+int addGuestSession(const char *id, time_t login_time, int remain_at_login);             // 1=성공,0=실패
+int getGuestSession(const char *id, time_t *out_login_time, int *out_remain_at_login);   // 1=성공,0=없음
+int popGuestSession(const char *id, time_t *out_login_time, int *out_remain_at_login);   // 1=성공,0=없음
 
 #endif
 

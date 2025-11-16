@@ -22,6 +22,8 @@
 #define PATH_LOGIN_TIMES_TEMP   DATA_DIR "/login_times_temp.csv"
 #define PATH_GUEST              DATA_DIR "/Guest_time.csv"
 #define PATH_GUEST_TEMP         DATA_DIR "/Guest_time_temp.csv"
+#define PATH_GUEST_SESSIONS     DATA_DIR "/guest_sessions.csv"
+#define PATH_GUEST_SESSIONS_TMP DATA_DIR "/guest_sessions_temp.csv"
 
 static void ensureDataDir(void) {
     struct stat st;
@@ -307,6 +309,98 @@ int saveGuestInfo(const GuestInfo *guest) {
     fclose(temp);
     remove(PATH_GUEST);
     rename(PATH_GUEST_TEMP, PATH_GUEST);
+    return 1;
+}
+
+int deleteGuestInfo(const char *id) {
+    ensureDataDir();
+    FILE *fp = fopen(PATH_GUEST, "r");
+    FILE *temp = fopen(PATH_GUEST_TEMP, "w");
+    if (!fp && !temp) return 0;
+    if (!temp) { if (fp) fclose(fp); return 0; }
+
+    int found = 0;
+    if (fp) {
+        char line[256], gid[MAX_LEN];
+        while (fgets(line, sizeof(line), fp)) {
+            if (sscanf(line, "%99[^,],", gid) == 1 && strcmp(gid, id) == 0) {
+                found = 1; // skip this line to delete
+                continue;
+            }
+            fputs(line, temp);
+        }
+        fclose(fp);
+    }
+    fclose(temp);
+
+    remove(PATH_GUEST);
+    rename(PATH_GUEST_TEMP, PATH_GUEST);
+    return found ? 1 : 0;
+}
+
+// -------------------------
+// Guest sessions: id,login_time,remain_at_login
+// -------------------------
+int addGuestSession(const char *id, time_t login_time, int remain_at_login) {
+    ensureDataDir();
+    FILE *f = fopen(PATH_GUEST_SESSIONS, "a");
+    if (!f) return 0;
+    fprintf(f, "%s,%ld,%d\n", id, (long)login_time, remain_at_login);
+    fclose(f);
+    return 1;
+}
+
+int getGuestSession(const char *id, time_t *out_login_time, int *out_remain_at_login) {
+    ensureDataDir();
+    FILE *f = fopen(PATH_GUEST_SESSIONS, "r");
+    if (!f) return 0;
+    char line[256], gid[MAX_LEN];
+    long lt = 0;
+    int remain = 0, found = 0;
+    while (fgets(line, sizeof(line), f)) {
+        if (sscanf(line, "%99[^,],%ld,%d", gid, &lt, &remain) == 3) {
+            if (strcmp(gid, id) == 0) {
+                found = 1;
+                break;
+            }
+        }
+    }
+    fclose(f);
+    if (!found) return 0;
+    if (out_login_time) *out_login_time = (time_t)lt;
+    if (out_remain_at_login) *out_remain_at_login = remain;
+    return 1;
+}
+
+int popGuestSession(const char *id, time_t *out_login_time, int *out_remain_at_login) {
+    ensureDataDir();
+    FILE *f = fopen(PATH_GUEST_SESSIONS, "r");
+    FILE *t = fopen(PATH_GUEST_SESSIONS_TMP, "w");
+    if (!f || !t) {
+        if (f) fclose(f);
+        if (t) fclose(t);
+        return 0;
+    }
+    char line[256], gid[MAX_LEN];
+    long lt = 0;
+    int remain = 0, found = 0;
+    while (fgets(line, sizeof(line), f)) {
+        if (sscanf(line, "%99[^,],%ld,%d", gid, &lt, &remain) == 3) {
+            if (!found && strcmp(gid, id) == 0) {
+                found = 1;
+                continue; // skip (pop)
+            }
+        }
+        fputs(line, t);
+    }
+    fclose(f);
+    fclose(t);
+    remove(PATH_GUEST_SESSIONS);
+    rename(PATH_GUEST_SESSIONS_TMP, PATH_GUEST_SESSIONS);
+
+    if (!found) return 0;
+    if (out_login_time) *out_login_time = (time_t)lt;
+    if (out_remain_at_login) *out_remain_at_login = remain;
     return 1;
 }
 

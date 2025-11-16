@@ -64,6 +64,64 @@ static void chargeTime(GuestInfo *guest) {
     printf("Remaining time after charge: %d minutes\n", guest->remain_time);
 }
 
+// Guest login: record session with current remaining time
+static void guestLogin(GuestInfo *guest) {
+    // Ensure remaining time is up to date before recording session
+    updateRemainingTime(guest);
+    saveGuestInfo(guest);
+    time_t now = time(NULL);
+    if (addGuestSession(guest->id, now, guest->remain_time)) {
+        printf("Guest [%s] logged in. Remaining: %d minutes\n", guest->id, guest->remain_time);
+    } else {
+        printf("Failed to record guest login.\n");
+    }
+}
+
+// Guest logout: compute overuse and bill per rule (>=10min billed in 10-min units, <10 free)
+static void guestLogout(GuestInfo *guest) {
+    time_t login_time;
+    int remain_at_login = 0;
+    if (!getGuestSession(guest->id, &login_time, &remain_at_login)) {
+        printf("No active guest session found. Please login first.\n");
+        return;
+    }
+    // Update remaining based on actual elapsed
+    updateRemainingTime(guest);
+    saveGuestInfo(guest);
+
+    time_t now = time(NULL);
+    int elapsed = (int)((now - login_time) / 60);
+    printf("Elapsed since login: %d minutes\n", elapsed);
+
+    // finalize session pop
+    popGuestSession(guest->id, NULL, NULL);
+
+    int over_minutes = elapsed - remain_at_login;
+    if (over_minutes <= 0) {
+        printf("No overuse. Goodbye!\n");
+        // Remove guest record upon logout
+        if (deleteGuestInfo(guest->id)) {
+            printf("Guest record removed.\n");
+        }
+        return;
+    }
+    if (over_minutes < 10) {
+        printf("Overused by %d minutes (<10). No charge (service).\n", over_minutes);
+        if (deleteGuestInfo(guest->id)) {
+            printf("Guest record removed.\n");
+        }
+        return;
+    }
+    int price_per_10min = (PRODUCT_PRICE[0] * 10) / PRODUCT_MINUTES[0];
+    int units_10min = over_minutes / 10;
+    int cost = units_10min * price_per_10min;
+    printf("Overused by %d minutes. Charging %d x 10-minute unit(s).\n", over_minutes, units_10min);
+    printf("Please pay: %d KRW.\n", cost);
+    if (deleteGuestInfo(guest->id)) {
+        printf("Guest record removed.\n");
+    }
+}
+
 // Show remaining time
 static void showRemainingTime(GuestInfo *guest) {
     updateRemainingTime(guest);
@@ -94,7 +152,11 @@ void guestMenu(void) {
 
     while (1) {
         printf("\n------ Guest Menu ------\n");
-        printf("1. Charge time\n2. Show remaining time\n3. Back\n");
+        printf("1. Charge time\n");
+        printf("2. Show remaining time\n");
+        printf("3. Login (start session)\n");
+        printf("4. Logout (end session & billing)\n");
+        printf("5. Back\n");
         printf("------------------------\n");
         printf("Select: ");
 
@@ -109,6 +171,12 @@ void guestMenu(void) {
                 showRemainingTime(&guest);
                 break;
             case 3:
+                guestLogin(&guest);
+                return;
+            case 4:
+                guestLogout(&guest);
+                break;
+            case 5:
                 printf("Closing guest menu.\n");
                 return;
             default:
