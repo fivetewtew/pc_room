@@ -3,45 +3,40 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_LEN 100
+#include "newUser.h"
+#include "storage.h"
 
-int main(void) {
-    char name[MAX_LEN], password[MAX_LEN], line[MAX_LEN];
+void newUser(void) {
+    char name[MAX_LEN], password[MAX_LEN];
 
-    printf("»ç¿ëÀÚ ÀÌ¸§ ÀÔ·Â: ");
-    scanf("%s", name);
+    printf("ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ ï¿½Ô·ï¿½: ");
+    scanf("%99s", name);
 
-    FILE *file = fopen("User.csv", "r");
-    if (file) {
-        while (fgets(line, MAX_LEN, file)) {
-            char *token = strtok(line, ",");
-            if (token && strcmp(token, name) == 0) {
-                printf("ÀÌ¹Ì Á¸ÀçÇÏ´Â »ç¿ëÀÚ ÀÌ¸§ÀÔ´Ï´Ù.\n");
-                fclose(file);
-                return 1;
-            }
-        }
-        fclose(file);
+    // ì´ë¯¸ ì¡´ì¬í•˜ëŠ”ì§€ í™•ì¸
+    UserRecord existing;
+    if (loadUser(name, &existing)) {
+        printf("ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ï¿½Ô´Ï´ï¿½.\n");
+        return;
     }
 
-    printf("ºñ¹Ğ¹øÈ£ ÀÔ·Â: ");
-    scanf("%s", password);
+    printf("ï¿½ï¿½Ğ¹ï¿½È£ ï¿½Ô·ï¿½: ");
+    scanf("%99s", password);
 
-    FILE *userFile = fopen("User.csv", "a");
-    FILE *timeFile = fopen("User_time.csv", "a");
+    UserRecord user;
+    memset(&user, 0, sizeof(user));
+    strncpy(user.id, name, MAX_LEN - 1);
+    strncpy(user.password, password, MAX_LEN - 1);
+    user.is_logged_in = 0;
 
-    if (!userFile || !timeFile) {
-        printf("ÆÄÀÏ ¿­±â ½ÇÆĞ\n");
-        return 1;
+    UserTime timeRec;
+    memset(&timeRec, 0, sizeof(timeRec));
+    strncpy(timeRec.id, name, MAX_LEN - 1);
+    timeRec.minutes = 0;
+
+    if (!saveUser(&user) || !saveUserTime(&timeRec)) {
+        printf("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½\n");
+        return;
     }
 
-    fprintf(userFile, "%s,%s,0\n", name, password); // ·Î±×ÀÎ ¿©ºÎ: 0
-    fprintf(timeFile, "%s,0\n", name); // ½Ã°£: 0ºĞ
-
-    fclose(userFile);
-    fclose(timeFile);
-
-    printf("È¸¿ø°¡ÀÔ ¿Ï·á!\n");
-    return 0;
+    printf("È¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ï·ï¿½!\n");
 }
-

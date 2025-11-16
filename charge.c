@@ -4,10 +4,13 @@
 #include <string.h>
 #include <time.h>
 
+#include "charge.h"
+#include "storage.h"
+
 #define MAX_LEN 100
 
-// User.csv¿¡¼­ »ç¿ëÀÚ Á¸Àç ¿©ºÎ È®ÀÎ
-int userExists(const char* username) {
+// User.csvï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
+static int userExists(const char* username) {
     FILE *file = fopen("User.csv", "r");
     if (!file) return 0;
 
@@ -25,8 +28,8 @@ int userExists(const char* username) {
     return 0;
 }
 
-// User.csv¿¡¼­ ·Î±×ÀÎ »óÅÂ È®ÀÎ
-int isUserLoggedIn(const char* username) {
+// User.csvï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
+static int isUserLoggedIn(const char* username) {
     FILE *file = fopen("User.csv", "r");
     if (!file) return 0;
 
@@ -44,8 +47,8 @@ int isUserLoggedIn(const char* username) {
     return 0;
 }
 
-// ·Î±×ÀÎ ½Ã°£ ÀÐ±â ÇÔ¼ö (»èÁ¦ÇÏÁö ¾ÊÀ½)
-time_t getLoginTime(const char *username) {
+// ï¿½Î±ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½Ð±ï¿½ ï¿½Ô¼ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+static time_t getLoginTime(const char *username) {
     FILE *file = fopen("login_times.csv", "r");
     if (!file) return 0;
 
@@ -65,56 +68,11 @@ time_t getLoginTime(const char *username) {
     return (time_t)login_time;
 }
 
-// User_time.csv¿¡¼­ ³²Àº ½Ã°£ ÀÐ±â
-int getUserRemainingTime(const char* username) {
-    FILE *file = fopen("User_time.csv", "r");
-    if (!file) return -1;
-
-    char line[MAX_LEN], name[MAX_LEN];
-    int time_val = -1;
-
-    while (fgets(line, sizeof(line), file)) {
-        sscanf(line, "%[^,],%d", name, &time_val);
-        if (strcmp(name, username) == 0) {
-            fclose(file);
-            return time_val;
-        }
-    }
-
-    fclose(file);
-    return -1;
-}
-
-// User_time.csv¿¡¼­ ³²Àº ½Ã°£ ¾÷µ¥ÀÌÆ® ÇÔ¼ö
-void updateUserRemainingTime(const char* username, int new_time) {
-    FILE *file = fopen("User_time.csv", "r");
-    FILE *temp = fopen("User_time_temp.csv", "w");
-    if (!file || !temp) return;
-
-    char line[MAX_LEN], name[MAX_LEN];
-    int time_val;
-
-    while (fgets(line, sizeof(line), file)) {
-        sscanf(line, "%[^,],%d", name, &time_val);
-        if (strcmp(name, username) == 0) {
-            fprintf(temp, "%s,%d\n", name, new_time > 0 ? new_time : 0);
-        } else {
-            fprintf(temp, "%s", line);
-        }
-    }
-
-    fclose(file);
-    fclose(temp);
-
-    remove("User_time.csv");
-    rename("User_time_temp.csv", "User_time.csv");
-}
-
-int chargeTime(const char *username) {
+static int chargeTime(const char *username) {
     int choice, added_time = 0, price = 0, cash;
 
-    printf("\nÃæÀüÇÒ ½Ã°£À» ¼±ÅÃÇÏ¼¼¿ä:\n");
-    printf("1. 1½Ã°£ (1000¿ø)\n2. 2½Ã°£ (1800¿ø)\n3. 3½Ã°£ (3500¿ø)\n¼±ÅÃ: ");
+    printf("\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½:\n");
+    printf("1. 1ï¿½Ã°ï¿½ (1000ï¿½ï¿½)\n2. 2ï¿½Ã°ï¿½ (1800ï¿½ï¿½)\n3. 3ï¿½Ã°ï¿½ (3500ï¿½ï¿½)\nï¿½ï¿½ï¿½ï¿½: ");
     scanf("%d", &choice);
 
     switch (choice) {
@@ -122,76 +80,74 @@ int chargeTime(const char *username) {
         case 2: added_time = 120; price = 1800; break;
         case 3: added_time = 180; price = 3500; break;
         default:
-            printf("Àß¸øµÈ ¼±ÅÃÀÔ´Ï´Ù.\n");
+            printf("ï¿½ß¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Ï´ï¿½.\n");
             return 0;
     }
 
-    printf("µ·À» ³Ö¾îÁÖ¼¼¿ä: ");
+    printf("ï¿½ï¿½ï¿½ï¿½ ï¿½Ö¾ï¿½ï¿½Ö¼ï¿½ï¿½ï¿½: ");
     scanf("%d", &cash);
 
     if (cash < price) {
-        printf("µ·ÀÌ ºÎÁ·ÇÕ´Ï´Ù. ÇöÀç ³ÖÀº µ· %d¿ø ¹ÝÈ¯ÇÕ´Ï´Ù.\n", cash);
+        printf("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ %dï¿½ï¿½ ï¿½ï¿½È¯ï¿½Õ´Ï´ï¿½.\n", cash);
         return 0;
     }
 
-    printf("%d¿ø °áÁ¦ ¿Ï·á! %dºÐ ÃæÀüµË´Ï´Ù.\n", price, added_time);
-    printf("ÀÜµ· %d¿ø ¹ÝÈ¯ÇÕ´Ï´Ù.\n", cash - price);
+    printf("%dï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ï·ï¿½! %dï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ë´Ï´ï¿½.\n", price, added_time);
+    printf("ï¿½Üµï¿½ %dï¿½ï¿½ ï¿½ï¿½È¯ï¿½Õ´Ï´ï¿½.\n", cash - price);
 
-    // »ç¿ëÀÚ°¡ ÇöÀç ·Î±×ÀÎ ÁßÀÎÁö È®ÀÎ
+    // ï¿½ï¿½ï¿½ï¿½Ú°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
     if (isUserLoggedIn(username)) {
-        // ·Î±×ÀÎ ÁßÀÌ¸é »ç¿ëÇÑ ½Ã°£¸¸Å­ Â÷°¨ ÈÄ ÃæÀü
+        // ï¿½Î±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½Å­ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         time_t login_time = getLoginTime(username);
         time_t now = time(NULL);
         
         if (login_time > 0) {
             int elapsed_min = (int)((now - login_time) / 60);
-            int current_remaining = getUserRemainingTime(username);
+            int current_remaining = 0;
+            if (!getUserTime(username, &current_remaining)) current_remaining = 0;
             
-            if (current_remaining < 0) current_remaining = 0;
-            
-            // »ç¿ëÇÑ ½Ã°£ Â÷°¨ ÈÄ ÃæÀü
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             int updated_time = (current_remaining - elapsed_min) + added_time;
             if (updated_time < 0) updated_time = 0;
             
-            updateUserRemainingTime(username, updated_time);
-            printf("·Î±×ÀÎ Áß »ç¿ëÇÑ %dºÐ Â÷°¨ ÈÄ %dºÐ ÃæÀüµÇ¾î ÃÑ %dºÐ ³²¾Ò½À´Ï´Ù.\n", 
+            setUserTime(username, updated_time);
+            printf("ï¿½Î±ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ %dï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ %dï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ ï¿½ï¿½ %dï¿½ï¿½ ï¿½ï¿½ï¿½Ò½ï¿½ï¿½Ï´ï¿½.\n", 
                    elapsed_min, added_time, updated_time);
         } else {
-            // ·Î±×ÀÎ ½Ã°£ ±â·ÏÀÌ ¾øÀ¸¸é ±×³É ÃæÀü
-            int remain = getUserRemainingTime(username);
-            if (remain < 0) remain = 0;
+            // ï¿½Î±ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½×³ï¿½ ï¿½ï¿½ï¿½ï¿½
+            int remain = 0;
+            if (!getUserTime(username, &remain)) remain = 0;
             remain += added_time;
-            updateUserRemainingTime(username, remain);
-            printf("? ÃæÀü ÈÄ ³²Àº ½Ã°£: %dºÐ\n", remain);
+            setUserTime(username, remain);
+            printf("? ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½: %dï¿½ï¿½\n", remain);
         }
     } else {
-        // ·Î±×ÀÎ ÁßÀÌ ¾Æ´Ï¸é ±×³É ÃæÀü
-        int remain = getUserRemainingTime(username);
-        if (remain < 0) remain = 0;
+        // ï¿½Î±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´Ï¸ï¿½ ï¿½×³ï¿½ ï¿½ï¿½ï¿½ï¿½
+        int remain = 0;
+        if (!getUserTime(username, &remain)) remain = 0;
         remain += added_time;
-        updateUserRemainingTime(username, remain);
-        printf("? ÃæÀü ÈÄ ³²Àº ½Ã°£: %dºÐ\n", remain);
+        setUserTime(username, remain);
+        printf("? ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½: %dï¿½ï¿½\n", remain);
     }
     
     return 1;
 }
 
-int main(void) {
+void chargeMenu(void) {
     char input_id[MAX_LEN];
-    printf("¾ÆÀÌµð ÀÔ·Â: ");
+    printf("ï¿½ï¿½ï¿½Ìµï¿½ ï¿½Ô·ï¿½: ");
     scanf("%s", input_id);
 
-    // »ç¿ëÀÚ Á¸Àç ¿©ºÎ È®ÀÎ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
     if (!userExists(input_id)) {
-        printf("Àß¸øµÈ ¾ÆÀÌµðÀÔ´Ï´Ù.\n");
-        return 0;
+        printf("ï¿½ß¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìµï¿½ï¿½Ô´Ï´ï¿½.\n");
+        return;
     }
 
     if (!chargeTime(input_id)) {
-        printf("¸ÞÀÎ ¸Þ´º·Î µ¹¾Æ°©´Ï´Ù.\n");
-        return 0;
+        printf("ï¿½ï¿½ï¿½ï¿½ ï¿½Þ´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Æ°ï¿½ï¿½Ï´ï¿½.\n");
+        return;
     }
 
-    printf("ÃæÀü ¿Ï·á!\n");
-    return 1;
+    printf("ï¿½ï¿½ï¿½ï¿½ ï¿½Ï·ï¿½!\n");
 }

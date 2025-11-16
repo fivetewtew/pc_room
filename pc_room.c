@@ -1,39 +1,44 @@
-// gptÇÇ½Ã¹æ.c
+// pc_room.c (ë©”ì¸ ë©”ë‰´)
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "newUser.h"
+#include "login.h"
+#include "charge.h"
+#include "Guest.h"
 
 int main(void) {
     char c;
 
     while (1) {
-        printf("\n====== ¸Ş´º ======\n");
-        printf("1. È¸¿ø°¡ÀÔ\n");
-        printf("2. ·Î±×ÀÎ/·Î±×¾Æ¿ô (ID ÀÔ·Â)\n");
-        printf("3. ½Ã°£ ÃæÀü\n");
-        printf("4. Á¾·á\n");
-        printf("5. ºñÈ¸¿ø ¸Ş´º\n");   // ºñÈ¸¿ø ¸Ş´º Ãß°¡
+        printf("\n====== ï¿½Ş´ï¿½ ======\n");
+        printf("1. È¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\n");
+        printf("2. ï¿½Î±ï¿½ï¿½ï¿½/ï¿½Î±×¾Æ¿ï¿½ (ID ï¿½Ô·ï¿½)\n");
+        printf("3. ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½\n");
+        printf("4. ï¿½ï¿½ï¿½ï¿½\n");
+        printf("5. ï¿½ï¿½È¸ï¿½ï¿½ ï¿½Ş´ï¿½\n");   // ï¿½ï¿½È¸ï¿½ï¿½ ï¿½Ş´ï¿½ ï¿½ß°ï¿½
         printf("==================\n");
-        printf("¼±ÅÃ >> ");
+        printf("ï¿½ï¿½ï¿½ï¿½ >> ");
         scanf(" %c", &c);
 
         switch (c) {
             case '1':
-                system("newUser");
+                newUser();
                 break;
             case '2':
-                system("login");
+                loginMenu();
                 break;
             case '3':
-                system("charge");
+                chargeMenu();
                 break;
             case '4':
-                printf("ÇÁ·Î±×·¥ Á¾·á\n");
+                printf("ï¿½ï¿½ï¿½Î±×·ï¿½ ï¿½ï¿½ï¿½ï¿½\n");
                 return 0;
             case '5':
-                system("Guest");  // ºñÈ¸¿ø ¸Ş´º ½ÇÇà
+                guestMenu();  // ï¿½ï¿½È¸ï¿½ï¿½ ï¿½Ş´ï¿½ ï¿½ï¿½ï¿½ï¿½
                 break;
             default:
-                printf("Àß¸øµÈ ÀÔ·ÂÀÔ´Ï´Ù. ´Ù½Ã ½ÃµµÇÏ¼¼¿ä.\n");
+                printf("ï¿½ß¸ï¿½ï¿½ï¿½ ï¿½Ô·ï¿½ï¿½Ô´Ï´ï¿½. ï¿½Ù½ï¿½ ï¿½Ãµï¿½ï¿½Ï¼ï¿½ï¿½ï¿½.\n");
         }
     }
 

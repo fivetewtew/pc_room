@@ -3,17 +3,19 @@
 #include <string.h>
 #include <time.h>
 
+#include "Guest.h"
+
 #define MAX_LEN 100
 #define FILE_NAME "Guest_time.csv"
 
-// °Ô½ºÆ® Á¤º¸ ±¸Á¶Ã¼
+// ï¿½Ô½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ã¼
 typedef struct {
     char id[MAX_LEN];
-    int remain_time;   // ºÐ ´ÜÀ§ ³²Àº ½Ã°£
-    time_t last_time;  // ¸¶Áö¸· ±â·Ï ½Ã°¢ (epoch time)
+    int remain_time;   // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
+    time_t last_time;  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ (epoch time)
 } GuestInfo;
 
-// ÆÄÀÏ¿¡¼­ °Ô½ºÆ® Á¤º¸ ÀÐ±â (Á¸ÀçÇÏ¸é 1 ¹ÝÈ¯, ¾øÀ¸¸é 0)
+// ï¿½ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½ ï¿½Ô½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½Ð±ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ 1 ï¿½ï¿½È¯, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 0)
 int readGuest(const char *id, GuestInfo *guest) {
     FILE *fp = fopen(FILE_NAME, "r");
     if (!fp) return 0;
@@ -22,7 +24,7 @@ int readGuest(const char *id, GuestInfo *guest) {
     while (fgets(line, sizeof(line), fp)) {
         char file_id[MAX_LEN];
         int remain;
-        long long last;  // time_t´Â º¸Åë long long È¤Àº long
+        long long last;  // time_tï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ long long È¤ï¿½ï¿½ long
 
         if (sscanf(line, "%[^,],%d,%lld", file_id, &remain, &last) == 3) {
             if (strcmp(id, file_id) == 0) {
@@ -39,12 +41,12 @@ int readGuest(const char *id, GuestInfo *guest) {
     return 0;
 }
 
-// ÆÄÀÏ¿¡ °Ô½ºÆ® Á¤º¸ ¾²±â (µ¤¾î¾²±â)
+// ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½Ô½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½î¾²ï¿½ï¿½)
 void writeGuest(const GuestInfo *guest) {
     FILE *fp = fopen(FILE_NAME, "r");
     FILE *temp = fopen("temp.csv", "w");
     if (!temp) {
-        printf("ÆÄÀÏ ÀÛ¾÷ ½ÇÆÐ\n");
+        printf("ï¿½ï¿½ï¿½ï¿½ ï¿½Û¾ï¿½ ï¿½ï¿½ï¿½ï¿½\n");
         if (fp) fclose(fp);
         return;
     }
@@ -56,7 +58,7 @@ void writeGuest(const GuestInfo *guest) {
             char file_id[MAX_LEN];
             if (sscanf(line, "%[^,],", file_id) == 1) {
                 if (strcmp(file_id, guest->id) == 0) {
-                    // ¾÷µ¥ÀÌÆ®µÈ µ¥ÀÌÅÍ ¾²±â
+                    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
                     fprintf(temp, "%s,%d,%lld\n", guest->id, guest->remain_time, (long long)guest->last_time);
                     found = 1;
                 } else {
@@ -67,19 +69,19 @@ void writeGuest(const GuestInfo *guest) {
         fclose(fp);
     }
 
-    // ¸¸¾à ±âÁ¸ ÆÄÀÏ¿¡ ¾ø´ø ID¸é »õ·Î Ãß°¡
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ IDï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½
     if (!found) {
         fprintf(temp, "%s,%d,%lld\n", guest->id, guest->remain_time, (long long)guest->last_time);
     }
 
     fclose(temp);
 
-    // ¿øº» ÆÄÀÏ ´ëÃ¼
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼
     remove(FILE_NAME);
     rename("temp.csv", FILE_NAME);
 }
 
-// ³²Àº ½Ã°£ °è»ê (ÇöÀç ½Ã°£ ±âÁØ ½Ç½Ã°£ Â÷°¨)
+// ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ç½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½)
 void updateRemainingTime(GuestInfo *guest) {
     time_t now = time(NULL);
     int elapsed_min = (int)((now - guest->last_time) / 60);
@@ -90,13 +92,13 @@ void updateRemainingTime(GuestInfo *guest) {
     }
 }
 
-// ÃæÀü ¸Þ´º & Ã³¸®
-void chargeTime(GuestInfo *guest) {
+// ï¿½ï¿½ï¿½ï¿½ ï¿½Þ´ï¿½ & Ã³ï¿½ï¿½
+static void chargeTime(GuestInfo *guest) {
     int choice, added_time = 0, price = 0;
     int money;
 
-    printf("\nÃæÀüÇÒ ½Ã°£À» ¼±ÅÃÇÏ¼¼¿ä:\n");
-    printf("1. 1½Ã°£ (1000¿ø)\n2. 2½Ã°£ (1800¿ø)\n3. 3½Ã°£ (3500¿ø)\n¼±ÅÃ: ");
+    printf("\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½:\n");
+    printf("1. 1ï¿½Ã°ï¿½ (1000ï¿½ï¿½)\n2. 2ï¿½Ã°ï¿½ (1800ï¿½ï¿½)\n3. 3ï¿½Ã°ï¿½ (3500ï¿½ï¿½)\nï¿½ï¿½ï¿½ï¿½: ");
     scanf("%d", &choice);
 
     switch (choice) {
@@ -104,54 +106,54 @@ void chargeTime(GuestInfo *guest) {
         case 2: added_time = 120; price = 1800; break;
         case 3: added_time = 180; price = 3500; break;
         default:
-            printf("Àß¸øµÈ ¼±ÅÃÀÔ´Ï´Ù.\n");
+            printf("ï¿½ß¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Ï´ï¿½.\n");
             return;
     }
 
-    printf("µ·À» ³Ö¾îÁÖ¼¼¿ä (ÃæÀü ±Ý¾× ÀÌ»ó): ");
+    printf("ï¿½ï¿½ï¿½ï¿½ ï¿½Ö¾ï¿½ï¿½Ö¼ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½Ý¾ï¿½ ï¿½Ì»ï¿½): ");
     scanf("%d", &money);
 
     if (money < price) {
-        printf("µ·ÀÌ ºÎÁ·ÇÕ´Ï´Ù. ÃæÀü Ãë¼Ò.\n");
+        printf("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½.\n");
         return;
     }
 
     int change = money - price;
     if (change > 0)
-        printf("ÀÜµ· %d¿øÀ» ¹ÝÈ¯ÇÕ´Ï´Ù.\n", change);
+        printf("ï¿½Üµï¿½ %dï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯ï¿½Õ´Ï´ï¿½.\n", change);
 
-    // ÃæÀü Àü ½Ç½Ã°£ Â÷°¨ Àû¿ë
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ç½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     updateRemainingTime(guest);
 
     guest->remain_time += added_time;
     guest->last_time = time(NULL);
     writeGuest(guest);
 
-    printf("? ÃæÀü ÈÄ ³²Àº ½Ã°£: %dºÐ\n", guest->remain_time);
+    printf("? ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½: %dï¿½ï¿½\n", guest->remain_time);
 }
 
-// ³²Àº ½Ã°£ Á¶È¸
-void showRemainingTime(GuestInfo *guest) {
+// ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½È¸
+static void showRemainingTime(GuestInfo *guest) {
     updateRemainingTime(guest);
 
     if (guest->remain_time <= 0) {
-        printf("ºñÈ¸¿ø [%s]ÀÇ ³²Àº ½Ã°£ÀÌ ¾ø½À´Ï´Ù.\n", guest->id);
+        printf("ï¿½ï¿½È¸ï¿½ï¿½ [%s]ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.\n", guest->id);
     } else {
-        printf("ºñÈ¸¿ø [%s]ÀÇ ³²Àº ½Ã°£: %dºÐ\n", guest->id, guest->remain_time);
+        printf("ï¿½ï¿½È¸ï¿½ï¿½ [%s]ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½: %dï¿½ï¿½\n", guest->id, guest->remain_time);
     }
 }
 
-int main() {
+void guestMenu(void) {
     char guest_id[MAX_LEN];
     GuestInfo guest;
 
-    printf("ºñÈ¸¿ø ID¸¦ ÀÔ·ÂÇÏ¼¼¿ä (°æ°í ºñ¹Ð¹øÈ£ ¾øÀ½): ");
+    printf("ï¿½ï¿½È¸ï¿½ï¿½ IDï¿½ï¿½ ï¿½Ô·ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ ï¿½ï¿½Ð¹ï¿½È£ ï¿½ï¿½ï¿½ï¿½): ");
     scanf("%s", guest_id);
 
     printf("\n");
 
     if (!readGuest(guest_id, &guest)) {
-        printf("ºñÈ¸¿ø [%s] Á¤º¸¸¦ Ã£À» ¼ö ¾ø¾î »õ·Î »ý¼ºÇÕ´Ï´Ù.\n", guest_id);
+        printf("ï¿½ï¿½È¸ï¿½ï¿½ [%s] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã£ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.\n", guest_id);
         strcpy(guest.id, guest_id);
         guest.remain_time = 0;
         guest.last_time = time(NULL);
@@ -159,10 +161,10 @@ int main() {
     }
 
     while (1) {
-        printf("\n------ ºñÈ¸¿ø ¸Þ´º ------\n");
-        printf("1. ½Ã°£ ÃæÀü\n2. ³²Àº ½Ã°£ Á¶È¸\n3. Á¾·á\n");
+        printf("\n------ ï¿½ï¿½È¸ï¿½ï¿½ ï¿½Þ´ï¿½ ------\n");
+        printf("1. ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½\n2. ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½È¸\n3. ï¿½ï¿½ï¿½ï¿½\n");
         printf("-------------------------\n");
-        printf("¼±ÅÃ: ");
+        printf("ï¿½ï¿½ï¿½ï¿½: ");
 
         int sel;
         scanf("%d", &sel);
@@ -175,10 +177,10 @@ int main() {
                 showRemainingTime(&guest);
                 break;
             case 3:
-                printf("ºñÈ¸¿ø ¸Þ´º¸¦ Á¾·áÇÕ´Ï´Ù.\n");
+                printf("ï¿½ï¿½È¸ï¿½ï¿½ ï¿½Þ´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.\n");
                 return 0;
             default:
-                printf("Àß¸øµÈ ¼±ÅÃÀÔ´Ï´Ù.\n");
+                printf("ï¿½ß¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Ï´ï¿½.\n");
         }
     }
 
