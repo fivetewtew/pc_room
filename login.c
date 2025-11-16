@@ -6,71 +6,42 @@
 
 #include "login.h"
 #include "storage.h"
+#include "auth.h"
 
 void loginMenu(void) {
     char input_id[MAX_LEN];
-    printf("���̵� �Է� (�α���/�α׾ƿ�): ");
+    printf("아이디를 입력하세요 (로그인/로그아웃): ");
     scanf("%99s", input_id);
 
     UserRecord user;
     if (!loadUser(input_id, &user)) {
-        printf("�ش� ID�� ã�� �� �����ϴ�.\n");
+        printf("해당 ID를 찾을 수 없습니다.\n");
         return;
     }
 
     if (user.is_logged_in == 0) {
-        // �α���
+        // 로그인 UI: 비밀번호만 입력 받고 나머지는 로직에 위임
         char password_input[MAX_LEN];
-        printf("��й�ȣ �Է�: ");
+        printf("비밀번호를 입력하세요: ");
         scanf("%99s", password_input);
 
-        if (strcmp(password_input, user.password) == 0) {
-            user.is_logged_in = 1;
-            if (!saveUser(&user)) {
-                printf("���� ���� ����\n");
-                return;
-            }
-
-            printf("[%s] �α��� ����!\n", user.id);
-            addLoginTime(user.id, time(NULL));  // �α��� �ð� ���
-
-            // ���� �ð� ���
-            UserTime t;
-            if (loadUserTime(user.id, &t)) {
-                printf("? ���� �ð�: %d��\n", t.minutes);
-            }
+        UserTime t;
+        if (try_login(&user, password_input, &t)) {
+            printf("[%s] 로그인 성공!\n", user.id);
+            printf("현재 남은 시간: %d분\n", t.minutes);
         } else {
-            printf("��й�ȣ�� Ʋ�Ƚ��ϴ�.\n");
+            printf("로그인 실패(비밀번호가 틀렸거나 이미 로그인된 ID입니다).\n");
         }
     } else {
-        // �α׾ƿ� - ��� �ð� ����
-        time_t login_time;
-        int has_login = popLoginTime(user.id, &login_time);
-        time_t now = time(NULL);
-        int elapsed_min = 0;
-
-        if (has_login) {
-            elapsed_min = (int)((now - login_time) / 60);
-            printf("�α��� �� ��� �ð�: %d��\n", elapsed_min);
-        } else {
-            printf("�α��� �ð��� ��ϵ��� �ʾҽ��ϴ�.\n");
-        }
-
+        // 로그아웃 UI: 별도 정보 입력 없이 ID만 가지고 로직 호출
+        int elapsed = 0;
         UserTime t;
-        int has_time = loadUserTime(user.id, &t);
-        if (!has_time) {
-            memset(&t, 0, sizeof(t));
-            strncpy(t.id, user.id, MAX_LEN - 1);
+        if (try_logout(&user, &elapsed, &t)) {
+            if (elapsed > 0)
+                printf("로그인 후 경과 시간: %d분\n", elapsed);
+            printf("[%s] 로그아웃 완료! 남은 시간: %d분\n", user.id, t.minutes);
+        } else {
+            printf("로그아웃 실패(로그인 상태가 아니거나 데이터 오류).\n");
         }
-
-        int updated = t.minutes - elapsed_min;
-        if (updated < 0) updated = 0;
-        t.minutes = updated;
-        saveUserTime(&t);
-
-        user.is_logged_in = 0;
-        saveUser(&user);
-
-        printf("[%s] �α׾ƿ� �Ϸ�! ���� �ð�: %d��\n", user.id, updated);
     }
 }

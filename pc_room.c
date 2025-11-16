@@ -11,14 +11,14 @@ int main(void) {
     char c;
 
     while (1) {
-        printf("\n====== �޴� ======\n");
-        printf("1. ȸ������\n");
-        printf("2. �α���/�α׾ƿ� (ID �Է�)\n");
-        printf("3. �ð� ����\n");
-        printf("4. ����\n");
-        printf("5. ��ȸ�� �޴�\n");   // ��ȸ�� �޴� �߰�
+        printf("\n====== 메뉴 ======\n");
+        printf("1. 회원 등록\n");
+        printf("2. 로그인/로그아웃 (ID 입력)\n");
+        printf("3. 시간 충전\n");
+        printf("4. 종료\n");
+        printf("5. 손님 메뉴\n");   // 손님 메뉴 추가
         printf("==================\n");
-        printf("���� >> ");
+        printf("선택 >> ");
         scanf(" %c", &c);
 
         switch (c) {
@@ -32,13 +32,13 @@ int main(void) {
                 chargeMenu();
                 break;
             case '4':
-                printf("���α׷� ����\n");
+                printf("프로그램을 종료합니다.\n");
                 return 0;
             case '5':
                 guestMenu();  // ��ȸ�� �޴� ����
                 break;
             default:
-                printf("�߸��� �Է��Դϴ�. �ٽ� �õ��ϼ���.\n");
+                printf("잘못 입력하셨습니다. 다시 시도해주세요.\n");
         }
     }
 
