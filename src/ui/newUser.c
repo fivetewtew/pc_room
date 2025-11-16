@@ -10,20 +10,20 @@
 void newUser(void) {
     char name[MAX_LEN], password[MAX_LEN];
 
-    printf("새 회원 ID를 입력하세요: ");
+    printf("Enter new member ID: ");
     scanf("%99s", name);
 
-    // 이미 존재하는지 확인
+    // Check if ID already exists
     UserRecord existing;
     if (loadUser(name, &existing)) {
-        printf("이미 존재하는 회원 ID입니다.\n");
+        printf("ID already exists.\n");
         return;
     }
 
-    printf("비밀번호를 입력하세요: ");
+    printf("Enter password: ");
     scanf("%99s", password);
 
-    // 신규 회원/시간 초기화
+    // Initialize new user/time
     UserRecord user;
     memset(&user, 0, sizeof(user));
     snprintf(user.id, sizeof(user.id), "%s", name);
@@ -35,12 +35,12 @@ void newUser(void) {
     snprintf(timeRec.id, sizeof(timeRec.id), "%s", name);
     timeRec.minutes = 0;
 
-    // 저장
+    // Save
     if (!saveUser(&user) || !saveUserTime(&timeRec)) {
-        printf("파일 저장 중 오류가 발생했습니다.\n");
+        printf("Failed to save data files.\n");
         return;
     }
 
-    printf("회원 등록이 완료되었습니다.\n");
+    printf("Member registration completed.\n");
 }
 
