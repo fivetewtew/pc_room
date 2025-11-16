@@ -2,6 +2,7 @@
 #define LOGIN_H
 
 void loginMenu(void);
+void showRemainingTimeMenu(void);
 
 #endif
 

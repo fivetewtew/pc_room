@@ -33,8 +33,9 @@ int main(void) {
         printf("1. Register member\n");
         printf("2. Login/Logout (enter ID)\n");
         printf("3. Charge time\n");
-        printf("4. Exit\n");
-        printf("5. Guest menu\n");
+        printf("4. Guest menu\n");
+        printf("5. Show member remaining time\n");
+        printf("6. Exit\n");
         printf("==================\n");
         printf("Select >> ");
         scanf(" %c", &c);
@@ -53,12 +54,16 @@ int main(void) {
                 chargeMenu();
                 break;
             case '4':
-                printf("Exiting program.\n");
-                return 0;
-            case '5':
                 // Guest time management
                 guestMenu();
                 break;
+            case '5':
+                // Show member remaining time
+                showRemainingTimeMenu();
+                break;
+            case '6':
+                printf("Exiting program.\n");
+                return 0;
             default:
                 printf("Invalid input. Please try again.\n");
         }

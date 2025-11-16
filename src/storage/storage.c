@@ -214,6 +214,32 @@ int popLoginTime(const char *id, time_t *out_t) {
     return 1;
 }
 
+int getLoginTime(const char *id, time_t *out_t) {
+    // login_times.csv에서 id에 해당하는 항목을 조회만 (삭제 없음)
+    ensureDataDir();
+    FILE *file = fopen(PATH_LOGIN_TIMES, "r");
+    if (!file) return 0;
+
+    char line[256], user[MAX_LEN];
+    long login_time = 0;
+    int found = 0;
+
+    while (fgets(line, sizeof(line), file)) {
+        long t;
+        if (sscanf(line, "%99[^,],%ld", user, &t) == 2) {
+            if (strcmp(user, id) == 0) {
+                login_time = t;
+                found = 1;
+                break;
+            }
+        }
+    }
+    fclose(file);
+    if (!found) return 0;
+    if (out_t) *out_t = (time_t)login_time;
+    return 1;
+}
+
 // -------------------------
 // Guest_time.csv: id,remain_time,last_time
 // -------------------------

@@ -18,6 +18,7 @@ int saveUserTime(const UserTime *timeRec);               // 1=성공,0=실패
 // 로그인 시각 기록/제거(pop)
 int addLoginTime(const char *id, time_t t);              // 1=성공,0=실패
 int popLoginTime(const char *id, time_t *out_t);         // 1=성공,0=없음
+int getLoginTime(const char *id, time_t *out_t);         // 1=성공,0=없음 (조회만)
 
 // Guest_time.csv: id,remain_time,last_time
 // 손님(게스트) 남은 시간 로드/저장
