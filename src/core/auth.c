@@ -36,7 +36,7 @@ int try_login(UserRecord *user, const char *password, UserTime *timeRec) {
             *timeRec = t;
         } else {
             memset(&t, 0, sizeof(t));
-            strncpy(t.id, user->id, MAX_LEN - 1);
+            snprintf(t.id, sizeof(t.id), "%s", user->id);
             t.minutes = 0;
             *timeRec = t;
         }
@@ -70,7 +70,7 @@ int try_logout(UserRecord *user, int *outElapsedMinutes, UserTime *timeRec) {
     int has_time = loadUserTime(user->id, &t);
     if (!has_time) {
         memset(&t, 0, sizeof(t));
-        strncpy(t.id, user->id, MAX_LEN - 1);
+        snprintf(t.id, sizeof(t.id), "%s", user->id);
     }
 
     int updated = t.minutes - elapsed_min;

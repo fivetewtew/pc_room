@@ -44,7 +44,7 @@ static int chargeTime(const char *username) {
     UserTime t;
     if (!loadUserTime(username, &t)) {
         memset(&t, 0, sizeof(t));
-        strncpy(t.id, username, MAX_LEN - 1);
+        snprintf(t.id, sizeof(t.id), "%s", username);
     }
 
     t.minutes += added_time;
@@ -63,10 +63,13 @@ void chargeMenu(void) {
     printf("충전할 회원 ID를 입력하세요: ");
     scanf("%s", input_id);
 
-    // 회원 존재 여부 확인
-    if (!userExists(input_id)) {
-        printf("존재하지 않는 ID입니다.\n");
-        return;
+    // 회원 존재 여부 확인 (storage를 통해 검사)
+    {
+        UserRecord tmp;
+        if (!loadUser(input_id, &tmp)) {
+            printf("존재하지 않는 ID입니다.\n");
+            return;
+        }
     }
 
     if (!chargeTime(input_id)) {

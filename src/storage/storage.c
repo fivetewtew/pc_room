@@ -6,6 +6,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 #include "storage.h"
 
@@ -24,7 +27,11 @@ static void ensureDataDir(void) {
     struct stat st;
     if (stat(DATA_DIR, &st) == -1) {
         // best-effort 생성
+#ifdef _WIN32
+        _mkdir(DATA_DIR);
+#else
         mkdir(DATA_DIR, 0777);
+#endif
     }
 }
 

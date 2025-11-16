@@ -110,13 +110,13 @@ void guestMenu(void) {
                 break;
             case 3:
                 printf("손님 메뉴를 종료합니다.\n");
-                return 0;
+                return;
             default:
                 printf("잘못된 입력입니다.\n");
         }
     }
 
-    return 0;
+    return;
 }
 
 

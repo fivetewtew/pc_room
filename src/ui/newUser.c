@@ -26,13 +26,13 @@ void newUser(void) {
     // 신규 회원/시간 초기화
     UserRecord user;
     memset(&user, 0, sizeof(user));
-    strncpy(user.id, name, MAX_LEN - 1);
-    strncpy(user.password, password, MAX_LEN - 1);
+    snprintf(user.id, sizeof(user.id), "%s", name);
+    snprintf(user.password, sizeof(user.password), "%s", password);
     user.is_logged_in = 0;
 
     UserTime timeRec;
     memset(&timeRec, 0, sizeof(timeRec));
-    strncpy(timeRec.id, name, MAX_LEN - 1);
+    snprintf(timeRec.id, sizeof(timeRec.id), "%s", name);
     timeRec.minutes = 0;
 
     // 저장
