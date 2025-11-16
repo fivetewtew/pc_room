@@ -249,4 +249,3 @@ int saveGuestInfo(const GuestInfo *guest) {
 }
 
 
-

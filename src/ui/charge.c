@@ -76,3 +76,5 @@ void chargeMenu(void) {
 
     printf("충전이 완료되었습니다.\n");
 }
+
+

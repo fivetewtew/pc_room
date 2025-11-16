@@ -43,3 +43,4 @@ void newUser(void) {
 
     printf("회원 등록이 완료되었습니다.\n");
 }
+

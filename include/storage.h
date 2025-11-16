@@ -27,4 +27,3 @@ int saveGuestInfo(const GuestInfo *guest);               // 1=성공,0=실패
 #endif
 
 
-
