@@ -232,7 +232,7 @@ int loadGuestInfo(const char *id, GuestInfo *outGuest) {
             if (strcmp(id, file_id) == 0) {
                 if (outGuest) {
                     memset(outGuest, 0, sizeof(*outGuest));
-                    strncpy(outGuest->id, file_id, MAX_LEN - 1);
+                    snprintf(outGuest->id, sizeof(outGuest->id), "%s", file_id);
                     outGuest->remain_time = remain;
                     outGuest->last_time = (time_t)last;
                 }
