@@ -4,13 +4,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "storage.h"
+
+// 데이터 파일 경로
+#define DATA_DIR                "data"
+#define PATH_USER               DATA_DIR "/User.csv"
+#define PATH_USER_TEMP          DATA_DIR "/User_temp.csv"
+#define PATH_USER_TIME          DATA_DIR "/User_time.csv"
+#define PATH_USER_TIME_TEMP     DATA_DIR "/User_time_temp.csv"
+#define PATH_LOGIN_TIMES        DATA_DIR "/login_times.csv"
+#define PATH_LOGIN_TIMES_TEMP   DATA_DIR "/login_times_temp.csv"
+#define PATH_GUEST              DATA_DIR "/Guest_time.csv"
+#define PATH_GUEST_TEMP         DATA_DIR "/Guest_time_temp.csv"
+
+static void ensureDataDir(void) {
+    struct stat st;
+    if (stat(DATA_DIR, &st) == -1) {
+        // best-effort 생성
+        mkdir(DATA_DIR, 0777);
+    }
+}
 
 // User.csv: id,password,status
 int loadUser(const char *id, UserRecord *outUser) {
     // User.csv에서 id에 해당하는 레코드를 찾아 반환
-    FILE *file = fopen("User.csv", "r");
+    ensureDataDir();
+    FILE *file = fopen(PATH_USER, "r");
     if (!file) return 0;
 
     char line[256];
@@ -33,8 +55,9 @@ int loadUser(const char *id, UserRecord *outUser) {
 
 int saveUser(const UserRecord *user) {
     // User.csv의 해당 id 라인을 새 값으로 교체(없으면 추가)
-    FILE *file = fopen("User.csv", "r");
-    FILE *temp = fopen("User_temp.csv", "w");
+    ensureDataDir();
+    FILE *file = fopen(PATH_USER, "r");
+    FILE *temp = fopen(PATH_USER_TEMP, "w");
     if (!temp) {
         if (file) fclose(file);
         return 0;
@@ -66,15 +89,16 @@ int saveUser(const UserRecord *user) {
     }
 
     fclose(temp);
-    remove("User.csv");
-    rename("User_temp.csv", "User.csv");
+    remove(PATH_USER);
+    rename(PATH_USER_TEMP, PATH_USER);
     return 1;
 }
 
 // User_time.csv: id,minutes
 int loadUserTime(const char *id, UserTime *outTime) {
     // User_time.csv에서 id에 해당하는 남은 시간(minutes) 조회
-    FILE *file = fopen("User_time.csv", "r");
+    ensureDataDir();
+    FILE *file = fopen(PATH_USER_TIME, "r");
     if (!file) return 0;
 
     char line[256];
@@ -99,8 +123,9 @@ int saveUserTime(const UserTime *timeRec) {
     int minutes = timeRec->minutes;
     if (minutes < 0) minutes = 0;
 
-    FILE *file = fopen("User_time.csv", "r");
-    FILE *temp = fopen("User_time_temp.csv", "w");
+    ensureDataDir();
+    FILE *file = fopen(PATH_USER_TIME, "r");
+    FILE *temp = fopen(PATH_USER_TIME_TEMP, "w");
     if (!temp) {
         if (file) fclose(file);
         return 0;
@@ -129,15 +154,16 @@ int saveUserTime(const UserTime *timeRec) {
     }
 
     fclose(temp);
-    remove("User_time.csv");
-    rename("User_time_temp.csv", "User_time.csv");
+    remove(PATH_USER_TIME);
+    rename(PATH_USER_TIME_TEMP, PATH_USER_TIME);
     return 1;
 }
 
 // login_times.csv: id,time_t
 int addLoginTime(const char *id, time_t t) {
     // login_times.csv에 (id, 로그인시각) 추가
-    FILE *file = fopen("login_times.csv", "a");
+    ensureDataDir();
+    FILE *file = fopen(PATH_LOGIN_TIMES, "a");
     if (!file) return 0;
     fprintf(file, "%s,%ld\n", id, (long)t);
     fclose(file);
@@ -146,8 +172,9 @@ int addLoginTime(const char *id, time_t t) {
 
 int popLoginTime(const char *id, time_t *out_t) {
     // login_times.csv에서 id에 해당하는 항목을 읽어오고(기억) 제거
-    FILE *file = fopen("login_times.csv", "r");
-    FILE *temp = fopen("login_times_temp.csv", "w");
+    ensureDataDir();
+    FILE *file = fopen(PATH_LOGIN_TIMES, "r");
+    FILE *temp = fopen(PATH_LOGIN_TIMES_TEMP, "w");
     if (!file || !temp) {
         if (file) fclose(file);
         if (temp) fclose(temp);
@@ -172,8 +199,8 @@ int popLoginTime(const char *id, time_t *out_t) {
 
     fclose(file);
     fclose(temp);
-    remove("login_times.csv");
-    rename("login_times_temp.csv", "login_times.csv");
+    remove(PATH_LOGIN_TIMES);
+    rename(PATH_LOGIN_TIMES_TEMP, PATH_LOGIN_TIMES);
 
     if (!found) return 0;
     if (out_t) *out_t = (time_t)login_time;
@@ -185,7 +212,8 @@ int popLoginTime(const char *id, time_t *out_t) {
 // -------------------------
 int loadGuestInfo(const char *id, GuestInfo *outGuest) {
     // Guest_time.csv에서 손님 정보 조회
-    FILE *fp = fopen("Guest_time.csv", "r");
+    ensureDataDir();
+    FILE *fp = fopen(PATH_GUEST, "r");
     if (!fp) return 0;
 
     char line[256];
@@ -212,8 +240,9 @@ int loadGuestInfo(const char *id, GuestInfo *outGuest) {
 
 int saveGuestInfo(const GuestInfo *guest) {
     // Guest_time.csv의 해당 id 라인을 새 값으로 교체(없으면 추가)
-    FILE *fp = fopen("Guest_time.csv", "r");
-    FILE *temp = fopen("Guest_time_temp.csv", "w");
+    ensureDataDir();
+    FILE *fp = fopen(PATH_GUEST, "r");
+    FILE *temp = fopen(PATH_GUEST_TEMP, "w");
     if (!temp) {
         if (fp) fclose(fp);
         return 0;
@@ -243,8 +272,8 @@ int saveGuestInfo(const GuestInfo *guest) {
     }
 
     fclose(temp);
-    remove("Guest_time.csv");
-    rename("Guest_time_temp.csv", "Guest_time.csv");
+    remove(PATH_GUEST);
+    rename(PATH_GUEST_TEMP, PATH_GUEST);
     return 1;
 }
 
