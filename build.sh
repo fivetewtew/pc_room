@@ -4,8 +4,8 @@ set -euo pipefail
 # 스크립트 위치(프로젝트 루트: pc_room)로 이동
 cd "$(dirname "$0")"
 
-# Windows 한글 출력 호환을 위해 소스/실행 문자셋을 UTF-8로 지정
-CFLAGS="-Wall -Wextra -O2 -Iinclude -finput-charset=UTF-8 -fexec-charset=UTF-8"
+# 표준 빌드 플래그 (Git Bash/mintty는 기본 UTF-8이므로 별도 문자셋 플래그 불필요)
+CFLAGS="-Wall -Wextra -O2 -Iinclude"
 
 UI_SRC="src/ui/pc_room.c src/ui/login.c src/ui/charge.c src/ui/Guest.c src/ui/newUser.c"
 CORE_SRC="src/core/auth.c"

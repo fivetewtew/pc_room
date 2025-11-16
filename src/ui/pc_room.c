@@ -16,23 +16,27 @@
 int main(void) {
     char c;
 
-    // 로케일/콘솔 인코딩을 UTF-8로 설정
-    setlocale(LC_ALL, "");
+    // 로케일 설정 (Git Bash/mintty는 UTF-8이 기본)
+    if (!setlocale(LC_ALL, "")) {
+        // 로케일 설정 실패 시 UTF-8 시도
+        setlocale(LC_ALL, "ko_KR.UTF-8");
+    }
 #ifdef _WIN32
+    // Windows 콘솔일 때만 코드페이지 설정 (Git Bash/mintty에서는 영향 없음)
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #endif
 
     while (1) {
         // 메인 메뉴 출력
-        printf(u8"\n====== 메뉴 ======\n");
-        printf(u8"1. 회원 등록\n");
-        printf(u8"2. 로그인/로그아웃 (ID 입력)\n");
-        printf(u8"3. 시간 충전\n");
-        printf(u8"4. 종료\n");
-        printf(u8"5. 손님 메뉴\n");   // 손님 메뉴
-        printf(u8"==================\n");
-        printf(u8"선택 >> ");
+        printf("\n====== 메뉴 ======\n");
+        printf("1. 회원 등록\n");
+        printf("2. 로그인/로그아웃 (ID 입력)\n");
+        printf("3. 시간 충전\n");
+        printf("4. 종료\n");
+        printf("5. 손님 메뉴\n");   // 손님 메뉴
+        printf("==================\n");
+        printf("선택 >> ");
         scanf(" %c", &c);
 
         switch (c) {
@@ -49,14 +53,14 @@ int main(void) {
                 chargeMenu();
                 break;
             case '4':
-                printf(u8"프로그램을 종료합니다.\n");
+                printf("프로그램을 종료합니다.\n");
                 return 0;
             case '5':
                 // 손님(게스트) 시간 관리
                 guestMenu();
                 break;
             default:
-                printf(u8"잘못 입력하셨습니다. 다시 시도해주세요.\n");
+                printf("잘못 입력하셨습니다. 다시 시도해주세요.\n");
         }
     }
 
