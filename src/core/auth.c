@@ -53,39 +53,47 @@ int try_logout(UserRecord *user, int *outElapsedMinutes, UserTime *timeRec) {
         return 0;
     }
 
+    // 로그인 시간 조회 및 삭제 (popLoginTime은 조회 후 삭제함)
     time_t login_time;
     int has_login = popLoginTime(user->id, &login_time);
     time_t now = time(NULL);
     int elapsed_min = 0;
 
+    // 로그인 시간이 있으면 경과 시간 계산 (분 단위)
     if (has_login && login_time > 0) {
         elapsed_min = (int)((now - login_time) / 60);
     }
 
+    // 경과 시간을 외부로 반환
     if (outElapsedMinutes) {
         *outElapsedMinutes = elapsed_min;
     }
 
+    // 현재 남은 시간 조회
     UserTime t;
     int has_time = loadUserTime(user->id, &t);
     if (!has_time) {
+        // 시간 정보가 없으면 초기화
         memset(&t, 0, sizeof(t));
         snprintf(t.id, sizeof(t.id), "%s", user->id);
     }
 
+    // 경과 시간만큼 차감 (음수 방지)
     int updated = t.minutes - elapsed_min;
     if (updated < 0) updated = 0;
     t.minutes = updated;
-    saveUserTime(&t);
+    saveUserTime(&t);  // 업데이트된 시간 저장
 
+    // 로그인 상태 해제 및 저장
     user->is_logged_in = 0;
     saveUser(user);
 
+    // 업데이트된 시간 정보 반환
     if (timeRec) {
         *timeRec = t;
     }
 
-    return 1;
+    return 1;  // 로그아웃 성공
 }
 
 

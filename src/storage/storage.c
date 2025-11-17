@@ -42,49 +42,56 @@ int loadUser(const char *id, UserRecord *outUser) {
     // User.csv에서 id에 해당하는 레코드를 찾아 반환
     ensureDataDir();
     FILE *file = fopen(PATH_USER, "r");
-    if (!file) return 0;
+    if (!file) return 0;  // 파일이 없으면 실패
 
     char line[256];
     UserRecord tmp;
 
+    // 파일의 모든 줄을 순회하면서 ID 검색
     while (fgets(line, sizeof(line), file)) {
+        // CSV 형식 파싱: id,password,is_logged_in
         if (sscanf(line, "%99[^,],%99[^,],%d",
                    tmp.id, tmp.password, &tmp.is_logged_in) == 3) {
+            // 찾는 ID와 일치하면 회원 정보 반환
             if (strcmp(tmp.id, id) == 0) {
                 if (outUser) *outUser = tmp;
                 fclose(file);
-                return 1;
+                return 1;  // 찾음
             }
         }
     }
 
     fclose(file);
-    return 0;
+    return 0;  // 찾지 못함
 }
 
 int saveUser(const UserRecord *user) {
     // User.csv의 해당 id 라인을 새 값으로 교체(없으면 추가)
     ensureDataDir();
-    FILE *file = fopen(PATH_USER, "r");
-    FILE *temp = fopen(PATH_USER_TEMP, "w");
+    FILE *file = fopen(PATH_USER, "r");  // 원본 파일 읽기
+    FILE *temp = fopen(PATH_USER_TEMP, "w");  // 임시 파일 쓰기
     if (!temp) {
         if (file) fclose(file);
-        return 0;
+        return 0;  // 임시 파일 생성 실패
     }
 
     char line[256];
     UserRecord tmp;
-    int found = 0;
+    int found = 0;  // 해당 ID를 찾았는지 여부
 
+    // 원본 파일이 있으면 한 줄씩 읽으면서 처리
     if (file) {
         while (fgets(line, sizeof(line), file)) {
+            // CSV 형식 파싱
             if (sscanf(line, "%99[^,],%99[^,],%d",
                        tmp.id, tmp.password, &tmp.is_logged_in) == 3) {
+                // 저장할 ID와 일치하면 새 정보로 교체
                 if (strcmp(tmp.id, user->id) == 0) {
                     fprintf(temp, "%s,%s,%d\n",
                             user->id, user->password, user->is_logged_in);
-                    found = 1;
+                    found = 1;  // 찾았음을 표시
                 } else {
+                    // 일치하지 않으면 기존 내용 그대로 복사
                     fputs(line, temp);
                 }
             }
@@ -92,15 +99,16 @@ int saveUser(const UserRecord *user) {
         fclose(file);
     }
 
+    // 기존에 없던 ID면 새로 추가
     if (!found) {
         fprintf(temp, "%s,%s,%d\n",
                 user->id, user->password, user->is_logged_in);
     }
 
     fclose(temp);
-    remove(PATH_USER);
-    rename(PATH_USER_TEMP, PATH_USER);
-    return 1;
+    remove(PATH_USER);  // 원본 파일 삭제
+    rename(PATH_USER_TEMP, PATH_USER);  // 임시 파일을 원본 파일로 변경
+    return 1;  // 저장 성공
 }
 
 // User_time.csv: id,minutes
