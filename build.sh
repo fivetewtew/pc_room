@@ -4,7 +4,6 @@ set -euo pipefail  # 에러 발생 시 스크립트 중단, 미정의 변수 사
 # 스크립트 위치(프로젝트 루트: pc_room)로 이동
 cd "$(dirname "$0")"
 
-# 표준 빌드 플래그 (Git Bash/mintty는 기본 UTF-8이므로 별도 문자셋 플래그 불필요)
 # -Wall: 모든 경고 표시, -Wextra: 추가 경고, -O2: 최적화 레벨 2, -Iinclude: 헤더 파일 경로
 CFLAGS="-Wall -Wextra -O2 -Iinclude"
 
