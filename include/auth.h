@@ -1,6 +1,7 @@
 #ifndef AUTH_H
 #define AUTH_H
 
+#include <time.h>  // time() 함수를 위해 추가
 #include "models.h"
 
 // 로그인 시도

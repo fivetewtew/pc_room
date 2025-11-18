@@ -1,6 +1,14 @@
 #ifndef MODELS_H
 #define MODELS_H
 
+#include <time.h>  // time_t 타입을 위해 추가
+
+// time_t가 정의되지 않은 경우를 대비한 fallback
+#ifndef _TIME_T_DEFINED
+#define _TIME_T_DEFINED
+typedef long time_t;
+#endif
+
 #define MAX_LEN 100
 
 // 회원 기본 정보

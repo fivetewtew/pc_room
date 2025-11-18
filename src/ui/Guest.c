@@ -1,5 +1,5 @@
 // Guest.c
-// Guest time management UI. Data I/O uses storage module.
+// 게스트 시간 관리 UI. 데이터 입출력은 storage 모듈을 사용합니다.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,142 +8,139 @@
 #include "Guest.h"
 #include "models.h"
 #include "config.h"
-
 #include "storage.h"
+#include "time.h"
+#include "billing.h"
+#include "utils.h"
 
-// Deduct elapsed minutes from remaining time
-// Based on GuestInfo.last_time
-void updateRemainingTime(GuestInfo *guest) {
-    time_t now = time(NULL);
-    int elapsed_min = (int)((now - guest->last_time) / 60);
-    if (elapsed_min > 0) {
-        guest->remain_time -= elapsed_min;
-        if (guest->remain_time < 0) guest->remain_time = 0;
-        guest->last_time = now;
-    }
-}
+// time() 함수 명시적 선언 (경고 제거)
+time_t time(time_t *timer);
 
-// Charge guest time
+// 게스트 시간 충전
 static void chargeTime(GuestInfo *guest) {
     int choice, added_time = 0, price = 0;
     int money;
 
-    printf("\nSelect a package to charge:\n");
+    printf("\n충전할 패키지를 선택하세요:\n");
     for (int i = 0; i < PRODUCT_COUNT; i++) {
-        printf("%d. %d minutes (%d KRW)\n", i + 1, PRODUCT_MINUTES[i], PRODUCT_PRICE[i]);
+        printf("%d. %d분 (%d원)\n", i + 1, PRODUCT_MINUTES[i], PRODUCT_PRICE[i]);
     }
-    printf("Select: ");
+    printf("선택: ");
     scanf("%d", &choice);
 
     if (choice < 1 || choice > PRODUCT_COUNT) {
-        printf("Invalid selection.\n");
+        printf("잘못된 선택입니다.\n");
         return;
     }
     added_time = PRODUCT_MINUTES[choice - 1];
     price = PRODUCT_PRICE[choice - 1];
 
-    printf("Enter amount (>= price, KRW): ");
+    printf("금액 입력 (가격 이상, 원): ");
     scanf("%d", &money);
 
     if (money < price) {
-        printf("Insufficient amount. Cancelling.\n");
+        printf("금액이 부족합니다. 취소합니다.\n");
         return;
     }
 
     int change = money - price;
     if (change > 0)
-        printf("Change: %d KRW.\n", change);
+        printf("거스름돈: %d원\n", change);
 
-    // 충전 직전 경과 시간 반영
-    updateRemainingTime(guest);
+    // 충전 직전 경과 시간 반영 (time 모듈 사용)
+    updateGuestRemainingTime(guest);
 
     guest->remain_time += added_time;
     guest->last_time = time(NULL);
     saveGuestInfo(guest);
 
-    printf("Remaining time after charge: %d minutes\n", guest->remain_time);
+    printf("충전 후 남은 시간: %d분\n", guest->remain_time);
 }
 
-// Guest login: record session with current remaining time
+// 게스트 로그인: 현재 남은 시간으로 세션 기록
 static void guestLogin(GuestInfo *guest) {
-    // Ensure remaining time is up to date before recording session
-    updateRemainingTime(guest);
+    // 세션 기록 전 남은 시간 최신화 (time 모듈 사용)
+    updateGuestRemainingTime(guest);
     saveGuestInfo(guest);
     time_t now = time(NULL);
     if (addGuestSession(guest->id, now, guest->remain_time)) {
-        printf("Guest [%s] logged in. Remaining: %d minutes\n", guest->id, guest->remain_time);
+        printf("게스트 [%s] 로그인 완료. 남은 시간: %d분\n", guest->id, guest->remain_time);
     } else {
-        printf("Failed to record guest login.\n");
+        printf("게스트 로그인 기록에 실패했습니다.\n");
     }
 }
 
-// Guest logout: compute overuse and bill per rule (>=10min billed in 10-min units, <10 free)
+// 게스트 로그아웃: 초과 사용 계산 및 규칙에 따른 요금 정산 (>=10분은 10분 단위, <10분은 무료)
 static void guestLogout(GuestInfo *guest) {
     time_t login_time;
     int remain_at_login = 0;
     if (!getGuestSession(guest->id, &login_time, &remain_at_login)) {
-        printf("No active guest session found. Please login first.\n");
+        printf("활성 게스트 세션이 없습니다. 먼저 로그인해주세요.\n");
         return;
     }
-    // Update remaining based on actual elapsed
-    updateRemainingTime(guest);
+    
+    // 실제 경과 시간 기반 남은 시간 업데이트 (time 모듈 사용)
+    updateGuestRemainingTime(guest);
     saveGuestInfo(guest);
 
     time_t now = time(NULL);
     int elapsed = (int)((now - login_time) / 60);
-    printf("Elapsed since login: %d minutes\n", elapsed);
+    printf("로그인 후 경과 시간: %d분\n", elapsed);
 
-    // finalize session pop
+    // 세션 종료 처리
     popGuestSession(guest->id, NULL, NULL);
 
-    int over_minutes = elapsed - remain_at_login;
+    // 초과 사용 요금 계산 (billing 모듈 사용)
+    int over_minutes = 0, cost = 0, units_10min = 0;
+    calculateGuestOveruseCharge(elapsed, remain_at_login, &over_minutes, &cost, &units_10min);
+
     if (over_minutes <= 0) {
-        printf("No overuse. Goodbye!\n");
-        // Remove guest record upon logout
+        printf("초과 사용 없음. 안녕히 가세요!\n");
         if (deleteGuestInfo(guest->id)) {
-            printf("Guest record removed.\n");
+            printf("게스트 기록이 삭제되었습니다.\n");
         }
         return;
     }
-    if (over_minutes < 10) {
-        printf("Overused by %d minutes (<10). No charge (service).\n", over_minutes);
+
+    if (cost == 0) {
+        printf("%d분 초과 사용 (10분 미만). 무료 서비스입니다.\n", over_minutes);
         if (deleteGuestInfo(guest->id)) {
-            printf("Guest record removed.\n");
+            printf("게스트 기록이 삭제되었습니다.\n");
         }
         return;
     }
-    int price_per_10min = (PRODUCT_PRICE[0] * 10) / PRODUCT_MINUTES[0];
-    int units_10min = over_minutes / 10;
-    int cost = units_10min * price_per_10min;
-    printf("Overused by %d minutes. Charging %d x 10-minute unit(s).\n", over_minutes, units_10min);
-    printf("Please pay: %d KRW.\n", cost);
+
+    printf("%d분 초과 사용. %d x 10분 단위로 요금이 부과됩니다.\n", over_minutes, units_10min);
+    printf("결제 금액: %d원\n", cost);
     if (deleteGuestInfo(guest->id)) {
-        printf("Guest record removed.\n");
+        printf("게스트 기록이 삭제되었습니다.\n");
     }
 }
 
-// Show remaining time
+// 남은 시간 표시
 static void showRemainingTime(GuestInfo *guest) {
-    updateRemainingTime(guest);
+    // 경과 시간 계산 및 차감 (time 모듈 사용)
+    updateGuestRemainingTime(guest);
 
     if (guest->remain_time <= 0) {
-        printf("Guest [%s] has no remaining time.\n", guest->id);
+        printf("게스트 [%s]의 남은 시간이 없습니다.\n", guest->id);
     } else {
-        printf("Guest [%s] remaining time: %d minutes\n", guest->id, guest->remain_time);
+        printf("게스트 [%s]의 남은 시간: %d분\n", guest->id, guest->remain_time);
     }
 }
 
 void guestMenu(void) {
+    
     char guest_id[MAX_LEN];
     GuestInfo guest;
 
-    printf("Enter guest ID (new IDs will be created): ");
+    printf("게스트 ID 입력 (새 ID는 자동 생성됩니다): ");
     scanf("%s", guest_id);
 
     printf("\n");
 
     if (!loadGuestInfo(guest_id, &guest)) {
-        printf("Guest [%s] not found. Creating a new record.\n", guest_id);
+        printf("게스트 [%s]를 찾을 수 없습니다. 새 기록을 생성합니다.\n", guest_id);
         strcpy(guest.id, guest_id);
         guest.remain_time = 0;
         guest.last_time = time(NULL);
@@ -151,14 +148,14 @@ void guestMenu(void) {
     }
 
     while (1) {
-        printf("\n------ Guest Menu ------\n");
-        printf("1. Charge time\n");
-        printf("2. Show remaining time\n");
-        printf("3. Login (start session)\n");
-        printf("4. Logout (end session & billing)\n");
-        printf("5. Back\n");
+        printf("\n------ 게스트 메뉴 ------\n");
+        printf("1. 시간 충전\n");
+        printf("2. 남은 시간 조회\n");
+        printf("3. 로그인 (세션 시작)\n");
+        printf("4. 로그아웃 (세션 종료 및 요금 정산)\n");
+        printf("5. 돌아가기\n");
         printf("------------------------\n");
-        printf("Select: ");
+        printf("선택: ");
 
         int sel;
         scanf("%d", &sel);
@@ -177,10 +174,10 @@ void guestMenu(void) {
                 guestLogout(&guest);
                 break;
             case 5:
-                printf("Closing guest menu.\n");
+                printf("게스트 메뉴를 종료합니다.\n");
                 return;
             default:
-                printf("Invalid input.\n");
+                printf("잘못된 입력입니다.\n");
         }
     }
 

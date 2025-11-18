@@ -8,6 +8,7 @@
 #include "charge.h"
 #include "storage.h"
 #include "config.h"
+#include "utils.h"
 
 // 회원 로그인 관련 정보는 storage/auth 모듈이 담당합니다.
 // 이 파일은 충전 UI 흐름만 담당합니다.
@@ -15,30 +16,30 @@
 static int chargeTime(const char *username) {
     int choice = 0, added_time = 0, price = 0, cash;
 
-    printf("\nSelect a package to charge:\n");
+    printf("\n충전할 패키지를 선택하세요:\n");
     for (int i = 0; i < PRODUCT_COUNT; i++) {
-        printf("%d. %d minutes (%d KRW)\n", i + 1, PRODUCT_MINUTES[i], PRODUCT_PRICE[i]);
+        printf("%d. %d분 (%d원)\n", i + 1, PRODUCT_MINUTES[i], PRODUCT_PRICE[i]);
     }
-    printf("Select: ");
+    printf("선택: ");
     scanf("%d", &choice);
 
     if (choice < 1 || choice > PRODUCT_COUNT) {
-        printf("Invalid selection.\n");
+        printf("잘못된 선택입니다.\n");
         return 0;
     }
     added_time = PRODUCT_MINUTES[choice - 1];
     price = PRODUCT_PRICE[choice - 1];
 
-    printf("Enter amount (KRW): ");
+    printf("금액 입력 (원): ");
     scanf("%d", &cash);
 
     if (cash < price) {
-        printf("Insufficient amount. Returning %d KRW.\n", cash);
+        printf("금액이 부족합니다. %d원을 반환합니다.\n", cash);
         return 0;
     }
 
-    printf("Paid %d KRW. %d minutes will be added.\n", price, added_time);
-    printf("Change: %d KRW.\n", cash - price);
+    printf("%d원 결제 완료. %d분이 추가됩니다.\n", price, added_time);
+    printf("거스름돈: %d원\n", cash - price);
 
     // 로그인 여부와 무관하게 항상 현재 남은 시간을 기준으로 충전
     UserTime t;
@@ -53,31 +54,32 @@ static int chargeTime(const char *username) {
         return 0;
     }
 
-    printf("Remaining time after charge: %d minutes\n", t.minutes);
+    printf("충전 후 남은 시간: %d분\n", t.minutes);
     
     return 1;
 }
 
 void chargeMenu(void) {
+    
     char input_id[MAX_LEN];
-    printf("Enter member ID to charge: ");
+    printf("충전할 회원 ID 입력: ");
     scanf("%s", input_id);
 
     // 회원 존재 여부 확인 (storage를 통해 검사)
     {
         UserRecord tmp;
         if (!loadUser(input_id, &tmp)) {
-            printf("ID does not exist.\n");
+            printf("존재하지 않는 ID입니다.\n");
             return;
         }
     }
 
     if (!chargeTime(input_id)) {
-        printf("Charge cancelled.\n");
+        printf("충전이 취소되었습니다.\n");
         return;
     }
 
-    printf("Charge completed.\n");
+    printf("충전이 완료되었습니다.\n");
 }
 
 

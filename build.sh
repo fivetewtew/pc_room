@@ -5,12 +5,13 @@ set -euo pipefail  # 에러 발생 시 스크립트 중단, 미정의 변수 사
 cd "$(dirname "$0")"
 
 # -Wall: 모든 경고 표시, -Wextra: 추가 경고, -O2: 최적화 레벨 2, -Iinclude: 헤더 파일 경로
+# UTF-8 플래그 제거 (test_build.sh와 동일하게)
 CFLAGS="-Wall -Wextra -O2 -Iinclude"
 
 # UI 관련 소스 파일들
 UI_SRC="src/ui/pc_room.c src/ui/login.c src/ui/charge.c src/ui/Guest.c src/ui/newUser.c"
-# 핵심 로직 소스 파일 (인증 관련)
-CORE_SRC="src/core/auth.c"
+# 핵심 로직 소스 파일 (인증, 시간 계산, 요금 계산)
+CORE_SRC="src/core/auth.c src/core/time.c src/core/billing.c"
 # 저장소 관련 소스 파일 (CSV 파일 입출력)
 STORAGE_SRC="src/storage/storage.c"
 # 설정 관련 소스 파일 (상품 정보 등)

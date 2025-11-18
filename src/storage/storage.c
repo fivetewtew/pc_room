@@ -263,8 +263,8 @@ int loadGuestInfo(const char *id, GuestInfo *outGuest) {
     while (fgets(line, sizeof(line), fp)) {
         char file_id[MAX_LEN];
         int remain;
-        long long last;
-        if (sscanf(line, "%99[^,],%d,%lld", file_id, &remain, &last) == 3) {
+        long last;  // long long -> long로 변경
+        if (sscanf(line, "%99[^,],%d,%ld", file_id, &remain, &last) == 3) {  // %lld -> %ld로 변경
             if (strcmp(id, file_id) == 0) {
                 if (outGuest) {
                     memset(outGuest, 0, sizeof(*outGuest));
@@ -298,8 +298,8 @@ int saveGuestInfo(const GuestInfo *guest) {
             char file_id[MAX_LEN];
             if (sscanf(line, "%99[^,],", file_id) == 1) {
                 if (strcmp(file_id, guest->id) == 0) {
-                    fprintf(temp, "%s,%d,%lld\n",
-                            guest->id, guest->remain_time, (long long)guest->last_time);
+                    fprintf(temp, "%s,%d,%ld\n",  // %lld -> %ld로 변경
+                            guest->id, guest->remain_time, (long)guest->last_time);  // (long long) -> (long)로 변경
                     found = 1;
                 } else {
                     fputs(line, temp);
@@ -310,8 +310,8 @@ int saveGuestInfo(const GuestInfo *guest) {
     }
 
     if (!found) {
-        fprintf(temp, "%s,%d,%lld\n",
-                guest->id, guest->remain_time, (long long)guest->last_time);
+        fprintf(temp, "%s,%d,%ld\n",  // %lld -> %ld로 변경
+                guest->id, guest->remain_time, (long)guest->last_time);  // (long long) -> (long)로 변경
     }
 
     fclose(temp);

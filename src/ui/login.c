@@ -8,81 +8,66 @@
 #include "login.h"
 #include "storage.h"
 #include "auth.h"
-#include "config.h"
+#include "time.h"
+#include "billing.h"
+#include "utils.h"
 
-// Show remaining time for a member (considering elapsed time if logged in)
+// 회원 남은 시간 조회 (로그인 중이면 경과 시간 반영)
 void showRemainingTimeMenu(void) {
+    // setup_console_utf8() 제거 - main()에서 이미 설정됨
+    
     char input_id[MAX_LEN];
-    printf("Enter member ID: ");
+    printf("회원 ID 입력: ");
     scanf("%99s", input_id);
 
-    UserRecord user;
-    if (!loadUser(input_id, &user)) {
-        printf("ID not found.\n");
-        return;
+    int remaining = 0;
+    if (getRemainingTimeWithElapsed(input_id, &remaining)) {
+        printf("[%s] 회원의 남은 시간: %d분\n", input_id, remaining);
+    } else {
+        printf("ID를 찾을 수 없습니다.\n");
     }
-
-    UserTime t;
-    int has_time = loadUserTime(user.id, &t);
-    if (!has_time) {
-        t.minutes = 0;
-        snprintf(t.id, sizeof(t.id), "%s", user.id);
-    }
-
-    int remaining = t.minutes;
-    if (user.is_logged_in) {
-        time_t login_time;
-        if (getLoginTime(user.id, &login_time)) {
-            time_t now = time(NULL);
-            int elapsed = (int)((now - login_time) / 60);
-            if (elapsed > 0) {
-                remaining -= elapsed;
-                if (remaining < 0) remaining = 0;
-            }
-        }
-    }
-
-    printf("Remaining time for [%s]: %d minutes\n", user.id, remaining);
 }
 
 void loginMenu(void) {
+    // setup_console_utf8() 제거 - main()에서 이미 설정됨
+    
     char input_id[MAX_LEN];
-    printf("Enter ID (login/logout): ");
+    printf("ID 입력 (로그인/로그아웃): ");
     scanf("%99s", input_id);
 
-    // Load user info
+    // 회원 정보 로드
     UserRecord user;
     if (!loadUser(input_id, &user)) {
-        printf("ID not found.\n");
+        printf("ID를 찾을 수 없습니다.\n");
         return;
     }
 
     if (user.is_logged_in == 0) {
-        // Login UI: ask password and delegate to logic
+        // 로그인 UI: 비밀번호 입력 후 로직에 위임
         char password_input[MAX_LEN];
-        printf("Enter password: ");
+        printf("비밀번호 입력: ");
         scanf("%99s", password_input);
 
-        // Block login if no remaining time
+        // 남은 시간이 없으면 로그인 차단
         {
             UserTime tcheck;
             if (!loadUserTime(user.id, &tcheck) || tcheck.minutes <= 0) {
-                printf("No remaining time. Please purchase time before logging in.\n");
+                printf("남은 시간이 없습니다. 로그인 전에 시간을 충전해주세요.\n");
                 return;
             }
         }
 
         UserTime t;
         if (try_login(&user, password_input, &t)) {
-            printf("[%s] Login successful!\n", user.id);
-            printf("Remaining time: %d minutes\n", t.minutes);
+            printf("[%s] 로그인 성공!\n", user.id);
+            printf("남은 시간: %d분\n", t.minutes);
         } else {
-            printf("Login failed (wrong password or already logged in).\n");
+            printf("로그인 실패 (비밀번호가 틀렸거나 이미 로그인된 상태입니다).\n");
         }
     } else {
-        // Logout UI
+        // 로그아웃 UI
         int elapsed = 0;
-        // capture remaining time before logout to compute overuse
+        // 로그아웃 전 남은 시간 캡처 (초과 사용 계산용)
         int prev_remaining = 0;
         {
             UserTime before;
@@ -91,26 +76,25 @@ void loginMenu(void) {
         UserTime t;
         if (try_logout(&user, &elapsed, &t)) {
             if (elapsed > 0)
-                printf("Elapsed time since login: %d minutes\n", elapsed);
-            printf("[%s] Logout complete. Remaining time: %d minutes\n", user.id, t.minutes);
+                printf("로그인 후 경과 시간: %d분\n", elapsed);
+            printf("[%s] 로그아웃 완료. 남은 시간: %d분\n", user.id, t.minutes);
 
-            // If elapsed time exceeds remaining time at login, bill per 10-minute units (under 10 minutes is free)
+            // 초과 사용 요금 계산 (billing 모듈 사용)
             int over_minutes = elapsed - prev_remaining;
             if (over_minutes > 0) {
-                if (over_minutes < 10) {
-                    printf("Overused by %d minutes (<10). No charge (service).\n", over_minutes);
+                int cost = 0, units_10min = 0;
+                calculateOveruseCharge(over_minutes, &cost, &units_10min);
+                
+                if (cost == 0) {
+                    printf("%d분 초과 사용 (10분 미만). 무료 서비스입니다.\n", over_minutes);
                 } else {
-                    // Price per 10 minutes is derived from the 60-minute pack price
-                    int price_per_10min = (PRODUCT_PRICE[0] * 10) / PRODUCT_MINUTES[0]; // floor
-                    int units_10min = over_minutes / 10; // floor units of 10 min
-                    int cost = units_10min * price_per_10min;
-                    printf("Overused by %d minutes. Charging %d x 10-minute unit(s) (rounded down; <10 min free).\n",
+                    printf("%d분 초과 사용. %d x 10분 단위로 요금이 부과됩니다 (10분 미만은 무료).\n",
                            over_minutes, units_10min);
-                    printf("Please pay: %d KRW.\n", cost);
+                    printf("결제 금액: %d원\n", cost);
                 }
             }
         } else {
-            printf("Logout failed (not logged in or data error).\n");
+            printf("로그아웃 실패 (로그인되지 않았거나 데이터 오류).\n");
         }
     }
 }
